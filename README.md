@@ -1,3 +1,3 @@
-# Subscription-Tracker
+# Subscription Tracker
 
-A small tkinter-based subscription tracking software
+A small tkinter-based subscription tracking software.
