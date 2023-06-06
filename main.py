@@ -20,9 +20,10 @@ bgcolour = "#4c4c4c"
 textcolour = "#ffffff"
 ACCENTCOLOUR = "#eb3434"
 subscription_list = [
-    ["Sub1", "16 May"], ["Sub2", "?????"], ["Sub3", "?????"], ["Sub4", "?????"],
-    ["Sub5", "?????"], ["Sub6", "?????"], ["Sub7", "?????"], ["Sub8", "?????"],
-    ["Sub9", "?????"], ["Sub10", "?????"], ["Sub11", "?????"], ["Sub12", "?????"]
+    ["Sub1", "16 May"], ["Sub2", "?????"], ["Sub3", "?????"],
+    ["Sub4", "?????"], ["Sub5", "?????"], ["Sub6", "?????"],
+    ["Sub7", "?????"], ["Sub8", "?????"], ["Sub9", "?????"],
+    ["Sub10", "?????"], ["Sub11", "?????"], ["Sub12", "?????"]
     ]
 frames = {}
 
@@ -60,7 +61,8 @@ class Window(tk.Tk):
             if name == "Sidebar":
                 frame.grid(row=0, column=0, sticky="nesw")
                 frame.grid(
-                    row=0, rowspan=1, column=0, padx=(20, 0), pady=20, sticky="nsew"
+                    row=0, rowspan=1, column=0, padx=(20, 0), pady=20,
+                    sticky="nsew"
                     )
             else:
                 frame.grid(row=0, column=1, sticky="nesw")
@@ -107,18 +109,28 @@ class Sidebar(tk.Frame):
             self, text="E", font=BIGFONT, fg=textcolour, bg=bgcolour,
             command=lambda: [
                 self.controller.showframe("SubscriptionManager"),
-                print(f"{CLEAR}[{BLUE}Frame Swapped{COLOURLESS}] -> SubscriptionManager")
-            ]
+                print(
+                    f"{CLEAR}[{BLUE}Frame Swapped{COLOURLESS}]"
+                    " -> SubscriptionManager"
+                    )
+                ]
             )
-        self.managertip = Hovertip(self.managerbutton, "Edit your current subscriptions")
+        self.managertip = Hovertip(
+            self.managerbutton, "Edit your current subscriptions"
+            )
         self.configbutton = tk.Button(
             self, text="\u2699", font=BIGFONT, fg=textcolour, bg=bgcolour,
             command=lambda: [
                 self.controller.showframe("Configuration"),
-                print(f"{CLEAR}[{BLUE}Frame Swapped{COLOURLESS}] -> Configuration")
+                print(
+                    f"{CLEAR}[{BLUE}Frame Swapped{COLOURLESS}]"
+                    " -> Configuration"
+                    )
             ]
             )
-        self.configtip = Hovertip(self.configbutton, "Change the settings of the application")
+        self.configtip = Hovertip(
+            self.configbutton, "Change the settings of the application"
+            )
         self.label.grid(row=0, column=0, sticky="new")
         self.mainbutton.grid(row=1, column=0, sticky="ews")
         self.managerbutton.grid(row=2, column=0, sticky="ews")
@@ -222,12 +234,18 @@ class Configuration(tk.Frame):
         darkswitch.config(bg=bgcolour)
         darkswitch.grid(row=0, column=0, padx=(10, 0))
         darkswitch.onswitch(
-            f"{os.getcwd()}/textures/On-Off-merged-frames.gif", "Sidebar", False
+            f"{os.getcwd()}/textures/On-Off-merged-frames.gif",
+            "Sidebar", False
             )
-        darklabel = tk.Label(self, text="Left Sided Navigation", fg=textcolour, bg=bgcolour, font=NORMALFONT)
+        darklabel = tk.Label(
+            self, text="Left Sided Navigation", fg=textcolour,
+            bg=bgcolour, font=NORMALFONT
+            )
         print(f"Darkswitch\n")
         if darkswitch is False:
-            master.controller.frames["Sidebar"].grid(row=0, column=2, sticky="nesw")
+            master.controller.frames["Sidebar"].grid(
+                row=0, column=2, sticky="nesw"
+                )
         darklabel.grid(row=0, column=1, sticky="w", padx=(20, 20))
         # self.label = tk.Label(
         #     self, text="Configuration Menu", bg="black", fg="white"
@@ -277,7 +295,8 @@ class AnimatedButton(tk.Label):
 
         try:
             self.delay = int((image.info['duration'])/3)
-        except:
+        except Exception as error:
+            print(error)
             self.delay = 100
 
         if len(self.frames) == 1:
@@ -304,7 +323,7 @@ class AnimatedButton(tk.Label):
                         ]
                     )
                 return True
-    
+
     def prev_frame(self):
         if self.frames:
             try:
@@ -323,7 +342,7 @@ class AnimatedButton(tk.Label):
                         ]
                     )
                 return False
-    
+
     def load_frame(self):
         if self.frames:
             self.config(image=self.frames[self.location])
@@ -353,12 +372,15 @@ class ChangeSettings():
                 if Frame != "Sidebar":
                     print(f"{Frame} asf")
                     frame.grid_forget()
-                    frame.grid(row=0, padx=20, pady=20, column=1, sticky="nesw")
+                    frame.grid(
+                        row=0, padx=20, pady=20, column=1, sticky="nesw"
+                        )
 
         elif setting == "Sidebar2":
             frame = frames[setting[:-1]]
             frame.grid(
-                row=0, rowspan=1, column=0, padx=(20, 0), pady=20, sticky="nsew"
+                row=0, rowspan=1, column=0, padx=(20, 0), pady=20,
+                sticky="nsew"
                 )
 
 
