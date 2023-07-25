@@ -14,6 +14,7 @@ import os
 import math
 # Allow me to add type hints to my code
 from typing import Dict, Any
+import json
 
 # Window Configuration and Terminal Log Configuration
 width = 1280
@@ -31,26 +32,45 @@ darkbg = "#404040"
 textcolour = "#ffffff"
 ACCENTCOLOUR = "#eb3434"
 currentdate = datetime.date.today()
-# A list of all subscriptions and their refresh dates
-subscription_list: list = [
-    ["Sub1", datetime.date(2023, 1, 1)], ["Sub2", datetime.date(2022, 11, 11)],
-    ["Sub3", "Sub3"], ["Sub4", "Sub4"], ["Sub5", "Sub5"], ["Sub6", "Sub6"],
-    ["Sub7", "Sub7"], ["Sub8", "Sub8"], ["Sub9", "Sub9"],
-    ["Sub10", "Sub10"], ["Sub11", "Sub11"], ["Sub12", "Sub12"],
-    ["Sub13", "Sub13"], ["Sub14", "Sub14"], ["Sub15", "Sub15"],
-    # Extra values in list to test scrolling
-    # ["Sub16", "Sub16"], ["Sub17", "Sub17"], ["Sub18", "Sub18"],
-    # ["Sub19", "Sub19"], ["Sub20", "Sub20"], ["Sub21", "Sub21"],
-    # ["Sub22", "Sub22"], ["Sub23", "Sub23"], ["Sub24", "Sub24"],
-    # ["Sub25", "Sub25"], ["Sub26", "Sub26"], ["Sub27", "Sub27"],
-    # ["Sub28", "Sub28"], ["Sub29", "Sub29"], ["Sub30", "Sub30"],
-    # ["Sub31", "Sub31"], ["Sub32", "Sub32"], ["Sub33", "Sub33"],
-    # ["Sub34", "Sub34"], ["Sub35", "Sub35"], ["Sub36", "Sub36"],
-    # ["Sub37", "Sub37"], ["Sub38", "Sub38"], ["Sub39", "Sub39"],
-    # ["Sub40", "Sub40"], ["Sub41", "Sub41"], ["Sub42", "Sub42"],
-    # ["Sub43", "Sub43"], ["Sub44", "Sub44"], ["Sub45", "Sub45"],
-    # ["Sub46", "Sub46"], ["Sub47", "Sub47"], ["Sub48", "Sub48"]
-    ]
+path = os.path.dirname(__file__)
+print(path)
+
+try:
+    with open(f"{path}/subscription_info.json", "r") as file:
+        subscription_dict = json.load(file)
+        print(subscription_dict)
+        subscription_list: list = []
+        for i in range(len(subscription_dict["Subscriptions"])):
+            name = subscription_dict["Subscriptions"][i]["name"]
+            date = datetime.datetime.strptime(
+                subscription_dict["Subscriptions"][i]["date"], "%d-%m-%Y"
+                ).date()
+            subscription_list.append([name, date])
+        file.close()
+
+except FileNotFoundError as error:
+    # A list of all subscriptions and their refresh dates
+    subscription_list = [
+        ["Sub1", datetime.date(2023, 1, 1)],
+        ["Sub2", datetime.date(2022, 11, 11)],
+        ["Sub3", "Sub3"], ["Sub4", "Sub4"], ["Sub5", "Sub5"], ["Sub6", "Sub6"],
+        ["Sub7", "Sub7"], ["Sub8", "Sub8"], ["Sub9", "Sub9"],
+        ["Sub10", "Sub10"], ["Sub11", "Sub11"], ["Sub12", "Sub12"],
+        ["Sub13", "Sub13"], ["Sub14", "Sub14"], ["Sub15", "Sub15"],
+        # Extra values in list to test scrolling
+        # ["Sub16", "Sub16"], ["Sub17", "Sub17"], ["Sub18", "Sub18"],
+        # ["Sub19", "Sub19"], ["Sub20", "Sub20"], ["Sub21", "Sub21"],
+        # ["Sub22", "Sub22"], ["Sub23", "Sub23"], ["Sub24", "Sub24"],
+        # ["Sub25", "Sub25"], ["Sub26", "Sub26"], ["Sub27", "Sub27"],
+        # ["Sub28", "Sub28"], ["Sub29", "Sub29"], ["Sub30", "Sub30"],
+        # ["Sub31", "Sub31"], ["Sub32", "Sub32"], ["Sub33", "Sub33"],
+        # ["Sub34", "Sub34"], ["Sub35", "Sub35"], ["Sub36", "Sub36"],
+        # ["Sub37", "Sub37"], ["Sub38", "Sub38"], ["Sub39", "Sub39"],
+        # ["Sub40", "Sub40"], ["Sub41", "Sub41"], ["Sub42", "Sub42"],
+        # ["Sub43", "Sub43"], ["Sub44", "Sub44"], ["Sub45", "Sub45"],
+        # ["Sub46", "Sub46"], ["Sub47", "Sub47"], ["Sub48", "Sub48"]
+        ]
+    print(error)
 
 # A dictionary containing all of the frames so they can be called again
 frames: Dict[Any, Any] = {}
@@ -114,9 +134,8 @@ class Window(tk.Tk):
         # Change the width and height variables to the width and height of
         # the adjusted window
         if event.widget == self:
-            if getattr(self, "_after_id", None):
-                self.parent.after_cancel(self._after_id)
             global width, height
+            print(width, height)
             width, height = self.winfo_width(), self.winfo_height()
 
 
@@ -356,24 +375,32 @@ class Configuration(tk.Frame):
 
 
 class SubscriptionManager(tk.Frame):
+    # Main menu with the text for each widget displayed in a text box instead
+    # of a label
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.controller = controller
         self.parent = parent
         self.columnconfigure(0, weight=0)
         self.columnconfigure(1, weight=1)
-        self.rowconfigure([1], weight=0)
-        self.rowconfigure([0], weight=1)
+        self.rowconfigure([0, 1], weight=1)
         self.configure(bg="white")
         print(f"[{GREEN}SubscriptionManager{COLOURLESS}] - Executed")
         self.grid(
             row=0, column=1, columnspan=3, padx=20, pady=20, sticky="nsew"
             )
-        self.heading = tk.Label(
+        heading = tk.Label(
             self, text="Edit your current subscriptions",
             fg=textcolour, bg=bgcolour, font=NORMALFONT
             )
-        self.heading.grid(row=0, column=0, padx=10)
+        heading.grid(row=0, column=0, padx=10)
+        text = tk.Label(
+            self, text="Not implemented yet", fg=textcolour, bg=bgcolour,
+            font=NORMALFONT
+        )
+        text.grid(row=1, column=0)
+
+        # update = tk.Button(self)
 
 
 # https://stackoverflow.com/questions/43770847/play-an-animated-gif-in-python-with-tkinter

@@ -1,0 +1,20 @@
+{
+    "Subscriptions" : [
+        {
+            "name": "name",
+            "date": "01-01-2023"
+        },
+        {
+            "name": "name2",
+            "date": "03-02-2023"
+        },
+        {
+            "name": "name3",
+            "date": "27-07-2023"
+        },
+        {
+            "name": "name4",
+            "date": "31-07-2023"
+        }
+    ]
+}
