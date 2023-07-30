@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox
 # PIL for image manipulation and playback
 from PIL import Image, ImageTk
 # Allow me to increment a number infinitely
@@ -9,7 +9,7 @@ from itertools import count
 from idlelib.tooltip import Hovertip
 import datetime  # Allows me to manage dates
 # A module that will allow me to increment dates
-from dateutil.relativedelta import relativedelta
+from dateutil.relativedelta import relativedelta  # pip install python-dateutil
 import os  # Lets me find the file path
 import math  # Allows me to round numbers
 # Allow me to add type hints to my code
@@ -25,12 +25,14 @@ COLOURLESS = "\033[0m"
 SMALLFONT = "Helvetica 12"
 NORMALFONT = "Helvetica 14"
 BIGFONT = "Helvetica 18"
-# CLEAR = "\033[F                                           \r"
 CLEAR = ""
 bgcolour = "#4c4c4c"
 darkbg = "#404040"
 textcolour = "#ffffff"
 ACCENTCOLOUR = "#eb3434"
+redcolour = "#eb3434"
+redtextcolour = "#ea5a5a"
+yellowcolour = "#fff325"
 currentdate = datetime.date.today()
 path = os.path.dirname(__file__)
 manager_i_max: int = 0
@@ -41,7 +43,6 @@ file_location = f"{path}/subscription_info.json"
 try:
     with open(file_location, "r") as file:
         subscription_dict = json.load(file)
-        print(subscription_dict)
         subscription_list: list = []
         for i in range(len(subscription_dict["Subscriptions"])):
             name = subscription_dict["Subscriptions"][i]["name"]
@@ -101,7 +102,6 @@ class Window(tk.Tk):
             frame = Frame(parent=container, controller=self)
             frame.config(bg=bgcolour)
             self.frames[name] = frame
-            print(name)
             if name == "Sidebar":
                 frame.grid(row=0, column=0, sticky="nesw")
                 frame.grid(
@@ -198,9 +198,10 @@ class MainMenu(tk.Frame):
         self.newframe = self.canvas.create_window(
             (0, 0), window=self.frame, anchor="nw"
             )
-
+        # When the window moves or is resized bind the following events.
         self.frame.bind("<Configure>", self.onFrameConfigure)
         self.canvas.bind("<Configure>", self.onCanvasConfigure)
+        # Bind the mouse wheel to the canvas
         self.canvas.bind_all("<MouseWheel>", self.onMouseWheel)
         self.frame.columnconfigure([1, 2, 3], weight=1)
         self.frame.rowconfigure([0, 2, 4], weight=1)
@@ -210,7 +211,9 @@ class MainMenu(tk.Frame):
             font=BIGFONT, bg=bgcolour, fg=textcolour
             )
         heading.grid(row=0, column=1, columnspan=3)
+        bgborders: list[...] = []
         labels: list[...] = []
+        delbuttons: list[...] = []
         infolabels: list[...] = []
         dates: list[...] = []
         constant: int = 0
@@ -225,12 +228,20 @@ class MainMenu(tk.Frame):
 
         def hovercolouroff(event):
             event.widget["bg"] = bgcolour
-        # print(subscription_list[0])
         for i in range(len(subscription_list)):
-            bgborder = tk.Label(
-                self.frame, bg=bgcolour, fg=textcolour, borderwidth=1,
-                relief="solid"
+            bgborders.append(
+                tk.Label(
+                    self.frame, bg=bgcolour, fg=textcolour, borderwidth=1,
+                    relief="solid"
                 )
+            )
+            # A button to delete the associated label.
+            delbuttons.append(
+                tk.Button(
+                    self.frame, text="X", font=SMALLFONT, fg=textcolour,
+                    bg=redcolour, command=lambda i=i: delButton(i)
+                )
+            )
             labels.append(
                 tk.Entry(
                     self.frame, bg=bgcolour, fg=textcolour, justify="center",
@@ -263,6 +274,10 @@ class MainMenu(tk.Frame):
                     relief="solid"
                     )
                 )
+            if days_remaining <= 3:
+                infolabels[-1].configure(fg=redtextcolour)
+            elif days_remaining <= 7:
+                infolabels[-1].configure(fg=yellowcolour)
             dates.append(
                 tk.Entry(
                     self.frame, bg=bgcolour, fg=textcolour, justify="center",
@@ -280,11 +295,15 @@ class MainMenu(tk.Frame):
             floor_i = math.floor(i/3)
             rowpos = self.calcRowPos(i, constant)
             columnpos = i - (constant * 3)
-            bgborder.grid(
+            bgborders[-1].grid(
                 row=rowpos, column=columnpos, sticky="nesw"
             )
             labels[-1].grid(
-                row=rowpos, column=columnpos, sticky="nesw", padx=1, pady=1
+                row=rowpos, column=columnpos, sticky="nesw", padx=(1, 25),
+                pady=1
+                )
+            delbuttons[-1].grid(
+                row=rowpos, column=columnpos, sticky="e"
                 )
             infolabels[-1].grid(
                 row=(rowpos + 1), column=columnpos, sticky="new"
@@ -320,12 +339,107 @@ class MainMenu(tk.Frame):
             command=lambda: updateAddGrid()
             )
 
+        def delButton(number):
+            # Remove default elements
+            try:
+                bgborders[number].destroy()
+                # Using .pop allows you to remove a value given an index
+                bgborders.pop(number)
+                labels[number].destroy()
+                labels.pop(number)
+                delbuttons[number].destroy()
+                delbuttons.pop(number)
+                infolabels[number].destroy()
+                infolabels.pop(number)
+                dates[number].destroy()
+                dates.pop(number)
+            # If a button was added by the "+" button it will have a number
+            # That is 2 greater than the default ones. This will catch these
+            # elements
+            except IndexError:
+                number -= 2
+                bgborders[number].destroy()
+                bgborders.pop(number)
+                labels[number].destroy()
+                labels.pop(number)
+                delbuttons[number].destroy()
+                delbuttons.pop(number)
+                infolabels[number].destroy()
+                infolabels.pop(number)
+                dates[number].destroy()
+                dates.pop(number)
+            global manager_i_max
+            global manager_constant
+            manager_i_max -= 1
+            # Calculate the row and column.
+            rowpos = self.calcRowPos(manager_i_max, manager_constant)
+            columnpos = manager_i_max - (manager_constant * 3)
+            # Ensure that the constant cant go below zero
+            if manager_constant > 0:
+                manager_constant -= 1
+            # If the element can be gridded in the 4th column, remove 3 columns
+            # and add a row.
+            if columnpos >= 4:
+                columnpos -= 3
+                rowpos += 1
+            # If the element can be gridded in columns below 0, add 3.
+            if columnpos <= 0:
+                columnpos += 3
+                rowpos -= 1
+            # Grid the "+" button based on the previous math.
+            addbutton.grid(
+                row=rowpos, rowspan=2, column=columnpos, sticky="nesw"
+                )
+            # i values for the loop to store each iteration seperately.
+            # (There was an issue where the elements would all be gridded)
+            # In the same column
+            loop_i = manager_i_max
+            loop_constant = manager_constant
+            for i in range(len(labels) - number):
+                loop_i -= 1
+                # Calculate the row and column.
+                rowpos = self.calcRowPos(loop_i, loop_constant)
+                columnpos = loop_i - (loop_constant * 3)
+                # Ensure the loop_constant cannot go below zero
+                if loop_constant > 0:
+                    loop_constant -= 1
+                # Reverse the order of the elements.
+                if columnpos == 3:
+                    columnpos = 1
+                elif columnpos == 1:
+                    columnpos = 3
+                # Ensure the column doesnt go too high or low.
+                if columnpos >= 4:
+                    columnpos -= 3
+                    rowpos += 1
+                if columnpos <= 0:
+                    columnpos += 3
+                    rowpos -= 1
+                # Grid each element
+                bgborders[i].grid(
+                    row=rowpos, column=columnpos, sticky="nesw"
+                    )
+                labels[i].grid(
+                    row=rowpos, column=columnpos, sticky="nesw", padx=(1, 25),
+                    pady=1
+                    )
+                delbuttons[i].grid(
+                    row=rowpos, column=columnpos, sticky="e"
+                    )
+                delbuttons[i].configure(
+                    command=lambda i=i: delButton(i)
+                )
+                infolabels[i].grid(
+                    row=(rowpos + 1), column=columnpos, sticky="new"
+                    )
+                dates[i].grid(
+                    row=(rowpos + 1), column=columnpos, sticky="ew", padx=5
+                    )
+
         # A function that will update the grid for the add button when clicked.
         # This will resize the grid and add another info box where it used to
         # be
-        def updateAddGrid():
-            if dates[-1].get() == "":
-                return
+        def updateAddGrid(negative=False):
             # Allow manipulation of the global variables representing the
             # highest i value and constant value reached by the grid loop.
             global manager_i_max
@@ -343,16 +457,31 @@ class MainMenu(tk.Frame):
             if columnpos >= 4:
                 columnpos -= 3
                 rowpos += 1
+            if columnpos <= 0:
+                columnpos += 3
+                rowpos -= 1
             # Grid the "+" button based on the previous math.
             addbutton.grid(
                 row=rowpos, rowspan=2, column=columnpos, sticky="nesw"
                 )
 
             # The border for the top row
-            bgborder = tk.Label(
-                self.frame, bg=bgcolour, fg=textcolour, borderwidth=1,
-                relief="solid"
+            bgborders.append(
+                tk.Label(
+                    self.frame, bg=bgcolour, fg=textcolour, borderwidth=1,
+                    relief="solid"
                 )
+            )
+            # Add the delete button.
+            # lambda i=manager_i_max allows values to be passed into the
+            # function, without this, all would have the same value passed.
+            delbuttons.append(
+                tk.Button(
+                    self.frame, text="X", font=SMALLFONT,
+                    fg=textcolour, bg=redcolour,
+                    command=lambda i=manager_i_max: delButton(manager_i_max)
+                )
+            )
             # The text entry for the top row.
             labels.append(
                 tk.Entry(
@@ -391,13 +520,23 @@ class MainMenu(tk.Frame):
             if columnpos >= 4:
                 columnpos -= 3
                 rowpos += 1
+            elif columnpos <= 0:
+                columnpos += 3
+                rowpos -= 1
             # Grid each element in their calculated positions
-            bgborder.grid(
+            bgborders[-1].grid(
                 row=rowpos, column=columnpos, sticky="nesw"
             )
             labels[-1].grid(
-                row=rowpos, column=columnpos, sticky="nesw", padx=1, pady=1
+                row=rowpos, column=columnpos, sticky="nesw", padx=(1, 25),
+                pady=1
                 )
+            delbuttons[-1].grid(
+                row=rowpos, column=columnpos, sticky="e"
+                )
+            delbuttons[-1].configure(
+                command=lambda i=i: delButton(i)
+            )
             infolabels[-1].grid(
                 row=(rowpos + 1), column=columnpos, sticky="new"
                 )
@@ -442,7 +581,6 @@ class MainMenu(tk.Frame):
             for i in range(len(labels)):
                 name = labels[i].get()
                 date = dates[i].get()
-                print(f"Date: {date}")
                 english_date = str(
                     datetime.datetime.strptime(date, "%d %B %Y").date()
                     )
@@ -452,14 +590,22 @@ class MainMenu(tk.Frame):
                         "date": english_date
                     }
                 )
-                print(f"Subscription: {name}, date: {date}")
             with open(file_location, "w") as file:
                 json.dump(data, file, indent=4)
                 file.close()
+            tk.messagebox.showinfo(
+                title="Success",
+                message="Data successfully updated"
+            )
         # If any errors occur, for example no data or others, print the error
         # in the terminal and do not continue.
         except ValueError as error:
-            print(error)
+            tk.messagebox.showerror(
+                title="Invalid Date",
+                message=(
+                    "Please ensure that the date has been entered correctly."
+                    )
+                )
         except Exception as error:
             print(error)
 
