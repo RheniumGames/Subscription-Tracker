@@ -7,14 +7,14 @@ from itertools import count
 # A module that will allow me to add a popup for when a user hovers over an
 # element
 from idlelib.tooltip import Hovertip
-import datetime
+import datetime  # Allows me to manage dates
 # A module that will allow me to increment dates
 from dateutil.relativedelta import relativedelta
-import os
-import math
+import os  # Lets me find the file path
+import math  # Allows me to round numbers
 # Allow me to add type hints to my code
 from typing import Dict, Any
-import json
+import json  # To write to external files
 
 # Window Configuration and Terminal Log Configuration
 width = 1280
@@ -25,54 +25,43 @@ COLOURLESS = "\033[0m"
 SMALLFONT = "Helvetica 12"
 NORMALFONT = "Helvetica 14"
 BIGFONT = "Helvetica 18"
-CLEAR = "\033[F                                           \r"
-# CLEAR = ""
+# CLEAR = "\033[F                                           \r"
+CLEAR = ""
 bgcolour = "#4c4c4c"
 darkbg = "#404040"
 textcolour = "#ffffff"
 ACCENTCOLOUR = "#eb3434"
 currentdate = datetime.date.today()
 path = os.path.dirname(__file__)
-print(path)
+manager_i_max: int = 0
+manager_constant: int = 0
+file_location = f"{path}/subscription_info.json"
 
+# Check if the subscription data file is there
 try:
-    with open(f"{path}/subscription_info.json", "r") as file:
+    with open(file_location, "r") as file:
         subscription_dict = json.load(file)
         print(subscription_dict)
         subscription_list: list = []
         for i in range(len(subscription_dict["Subscriptions"])):
             name = subscription_dict["Subscriptions"][i]["name"]
             date = datetime.datetime.strptime(
-                subscription_dict["Subscriptions"][i]["date"], "%d-%m-%Y"
+                subscription_dict["Subscriptions"][i]["date"], "%Y-%m-%d"
                 ).date()
             subscription_list.append([name, date])
         file.close()
 
+# If there is no file, populate the subscription information with fake data
 except FileNotFoundError as error:
-    # A list of all subscriptions and their refresh dates
     subscription_list = [
         ["Sub1", datetime.date(2023, 1, 1)],
-        ["Sub2", datetime.date(2022, 11, 11)],
-        ["Sub3", "Sub3"], ["Sub4", "Sub4"], ["Sub5", "Sub5"], ["Sub6", "Sub6"],
-        ["Sub7", "Sub7"], ["Sub8", "Sub8"], ["Sub9", "Sub9"],
-        ["Sub10", "Sub10"], ["Sub11", "Sub11"], ["Sub12", "Sub12"],
-        ["Sub13", "Sub13"], ["Sub14", "Sub14"], ["Sub15", "Sub15"],
-        # Extra values in list to test scrolling
-        # ["Sub16", "Sub16"], ["Sub17", "Sub17"], ["Sub18", "Sub18"],
-        # ["Sub19", "Sub19"], ["Sub20", "Sub20"], ["Sub21", "Sub21"],
-        # ["Sub22", "Sub22"], ["Sub23", "Sub23"], ["Sub24", "Sub24"],
-        # ["Sub25", "Sub25"], ["Sub26", "Sub26"], ["Sub27", "Sub27"],
-        # ["Sub28", "Sub28"], ["Sub29", "Sub29"], ["Sub30", "Sub30"],
-        # ["Sub31", "Sub31"], ["Sub32", "Sub32"], ["Sub33", "Sub33"],
-        # ["Sub34", "Sub34"], ["Sub35", "Sub35"], ["Sub36", "Sub36"],
-        # ["Sub37", "Sub37"], ["Sub38", "Sub38"], ["Sub39", "Sub39"],
-        # ["Sub40", "Sub40"], ["Sub41", "Sub41"], ["Sub42", "Sub42"],
-        # ["Sub43", "Sub43"], ["Sub44", "Sub44"], ["Sub45", "Sub45"],
-        # ["Sub46", "Sub46"], ["Sub47", "Sub47"], ["Sub48", "Sub48"]
+        ["Sub2", datetime.date(2022, 11, 11)]
         ]
     print(error)
 
 # A dictionary containing all of the frames so they can be called again
+# Dict[Any, Any] is a type hint and lets the linter and I know that frames
+# is a dictionary that can contain any values.
 frames: Dict[Any, Any] = {}
 
 
@@ -99,11 +88,11 @@ class Window(tk.Tk):
         # Lambda function used so that window is not destroyed on launch.
         self.bind("<Escape>", lambda x: self.destroy())
 
-    # This frame swapping code was adapted from this stackoverflow page
-    # https://stackoverflow.com/questions/7546050/switch-between-two-frames-in-tkinter
+        # This frame swapping code was adapted from this stackoverflow page
+        # https://stackoverflow.com/questions/7546050/switch-between-two-frames-in-tkinter
         self.frames = frames
         # For each frame class that I have
-        for Frame in (Sidebar, MainMenu, Configuration, SubscriptionManager):
+        for Frame in (Sidebar, MainMenu, Configuration):
             # Set the name of the variable to the name of the frame
             name = Frame.__name__
             # Set the "parent" or master window to be a frame created to
@@ -135,7 +124,6 @@ class Window(tk.Tk):
         # the adjusted window
         if event.widget == self:
             global width, height
-            print(width, height)
             width, height = self.winfo_width(), self.winfo_height()
 
 
@@ -160,19 +148,6 @@ class Sidebar(tk.Frame):
         # Show a tip when hovering over a navigation option to inform the user
         # about its function
         self.maintip = Hovertip(self.mainbutton, "Open the Main Menu")
-        self.managerbutton = tk.Button(
-            self, text="E", font=BIGFONT, fg=textcolour, bg=bgcolour,
-            command=lambda: [
-                self.controller.showframe("SubscriptionManager"),
-                print(
-                    f"{CLEAR}[{BLUE}Frame Swapped{COLOURLESS}]"
-                    " -> SubscriptionManager"
-                    )
-                ]
-            )
-        self.managertip = Hovertip(
-            self.managerbutton, "Edit your current subscriptions"
-            )
         self.configbutton = tk.Button(
             self, text="\u2699", font=BIGFONT, fg=textcolour, bg=bgcolour,
             command=lambda: [
@@ -188,19 +163,25 @@ class Sidebar(tk.Frame):
             )
         self.label.grid(row=0, column=0, sticky="new")
         self.mainbutton.grid(row=1, column=0, sticky="ews")
-        self.managerbutton.grid(row=2, column=0, sticky="ews")
         self.configbutton.grid(row=3, column=0, sticky="ews")
 
 
 class MainMenu(tk.Frame):
+    # Main menu with the text for each widget displayed in a text box instead
+    # of a label
     def __init__(self, parent, controller):
+        global manager_i_max
+        global manager_constant
         tk.Frame.__init__(self, parent)
         self.controller = controller
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.config(bg=bgcolour)
-        print(f"[{GREEN}Main Menu{COLOURLESS}] - Executed")
         # https://stackoverflow.com/questions/3085696/adding-a-scrollbar-to-a-group-of-widgets-in-tkinter/3092341#3092341
+        print(f"[{GREEN}MainMenu{COLOURLESS}] - Executed")
+        self.grid(
+            row=0, column=1, columnspan=3, padx=20, pady=20, sticky="nsew"
+            )
         self.canvas = tk.Canvas(
             self, borderwidth=0, bg=bgcolour, highlightthickness=0
             )
@@ -225,17 +206,15 @@ class MainMenu(tk.Frame):
         self.frame.rowconfigure([0, 2, 4], weight=1)
 
         heading = tk.Label(
-            self.frame,
-            text=(
-                "Here are your current subscriptions:"
-                ),
+            self.frame, text="Here are your current subscriptions:",
             font=BIGFONT, bg=bgcolour, fg=textcolour
             )
         heading.grid(row=0, column=1, columnspan=3)
         labels: list[...] = []
         infolabels: list[...] = []
+        dates: list[...] = []
         constant: int = 0
-        i_val: int = 0
+        i_max: int = 0
 
         # The functions below will change the colour of each label when
         # hovered over
@@ -248,13 +227,17 @@ class MainMenu(tk.Frame):
             event.widget["bg"] = bgcolour
         # print(subscription_list[0])
         for i in range(len(subscription_list)):
-            labels.append(
-                tk.Label(
-                    self.frame, text=subscription_list[i][0], font=NORMALFONT,
-                    bg=bgcolour, fg=textcolour,
-                    borderwidth=1, relief="solid"
-                    )
+            bgborder = tk.Label(
+                self.frame, bg=bgcolour, fg=textcolour, borderwidth=1,
+                relief="solid"
                 )
+            labels.append(
+                tk.Entry(
+                    self.frame, bg=bgcolour, fg=textcolour, justify="center",
+                    font=NORMALFONT, borderwidth=1, relief="sunken"
+                )
+            )
+            labels[-1].insert(0, subscription_list[i][0])
             try:
                 # You can subtract datetime.date objects and it will leave the
                 # difference. Then I can get the number of days remaining from
@@ -273,53 +256,212 @@ class MainMenu(tk.Frame):
             infolabels.append(
                 tk.Label(
                     self.frame, text=(
-                        f"Refreshes on:\n{subscription_list[i][1]}\n"
+                        "Refreshes on:\n\n"
                         f"In: {days_remaining} Days"
-                        # f"On:\n... of ..."
                         ),
-                    font=NORMALFONT,
-                    bg=bgcolour, fg=textcolour,
-                    borderwidth=1, relief="solid"
+                    font=NORMALFONT, bg=bgcolour, fg=textcolour, borderwidth=1,
+                    relief="solid"
                     )
+                )
+            dates.append(
+                tk.Entry(
+                    self.frame, bg=bgcolour, fg=textcolour, justify="center",
+                    font=NORMALFONT, borderwidth=1, relief="sunken"
+                )
+            )
+            dates[-1].insert(
+                0,
+                datetime.datetime.strftime(subscription_list[i][1], "%d %B %Y")
                 )
             i += 1
             # Using the math module, round i up
             ceiling_i = math.ceil(i/3)
             # Round i down to the nearest whole number
             floor_i = math.floor(i/3)
+            rowpos = self.calcRowPos(i, constant)
+            columnpos = i - (constant * 3)
+            bgborder.grid(
+                row=rowpos, column=columnpos, sticky="nesw"
+            )
+            labels[-1].grid(
+                row=rowpos, column=columnpos, sticky="nesw", padx=1, pady=1
+                )
+            infolabels[-1].grid(
+                row=(rowpos + 1), column=columnpos, sticky="new"
+                )
+            dates[-1].grid(
+                row=(rowpos + 1), column=columnpos, sticky="ew", padx=5
+                )
+            self.frame.rowconfigure((ceiling_i * 2), weight=1)
             if i % 3 == 0:
-                labels[-1].grid(
-                    row=(floor_i + constant),
-                    column=(i-(constant*3)), sticky="nesw"
-                    )
-                infolabels[-1].grid(
-                    row=(floor_i + constant + 1),
-                    column=(i - (constant * 3)), sticky="nesw"
-                    )
-                self.frame.rowconfigure((ceiling_i * 2), weight=1)
-                print(
-                    f"Label: {i}, InfoLabel: {i} Gridded. Constant: "
-                    f"{constant} has changed to {constant + 1}")
                 constant += 1
-            else:
-                labels[-1].grid(
-                    row=(floor_i + constant + 1),
-                    column=(i - (constant * 3)), sticky="nesw"
-                    )
-                infolabels[-1].grid(
-                    row=(floor_i + constant + 2),
-                    column=(i - (constant * 3)), sticky="nesw"
-                    )
-                if ceiling_i % 3 == 0:
-                    self.frame.rowconfigure((ceiling_i * 2), weight=1)
             # Bind when the mouse hovers over an element to change its colour
             # and when it leaves, change it back
             labels[-1].bind("<Enter>", hovercolouron)
             labels[-1].bind("<Leave>", hovercolouroff)
-            infolabels[-1].bind("<Enter>", hovercolouron)
-            infolabels[-1].bind("<Leave>", hovercolouroff)
+            dates[-1].bind("<Enter>", hovercolouron)
+            dates[-1].bind("<Leave>", hovercolouroff)
+            i_max += 1
 
-        print(self.master.winfo_children())
+        i_max += 1
+        manager_i_max = i_max
+        manager_constant = constant
+        updatebutton = tk.Button(
+            self, text="Update", font=NORMALFONT, fg=textcolour, bg=bgcolour,
+            command=lambda: [
+                self.getEntryText(labels, dates),
+                ]
+            )
+        updatebutton.grid(
+            row=2, columnspan=3, column=0, sticky="nesw", pady=(5, 0)
+            )
+        addbutton = tk.Button(
+            self.frame, text="+", font=BIGFONT, fg=textcolour, bg=bgcolour,
+            command=lambda: updateAddGrid()
+            )
+
+        # A function that will update the grid for the add button when clicked.
+        # This will resize the grid and add another info box where it used to
+        # be
+        def updateAddGrid():
+            if dates[-1].get() == "":
+                return
+            # Allow manipulation of the global variables representing the
+            # highest i value and constant value reached by the grid loop.
+            global manager_i_max
+            global manager_constant
+            # Add one loop
+            manager_i_max += 1
+            # Calculate the row and column.
+            rowpos = self.calcRowPos(manager_i_max, manager_constant)
+            columnpos = manager_i_max - (manager_constant * 3)
+            # If i is divisible by 3, add one to the constant.
+            if manager_i_max % 3 == 0:
+                manager_constant += 1
+            # If the element can be gridded in the 4th column, remove 3 columns
+            # and add a row.
+            if columnpos >= 4:
+                columnpos -= 3
+                rowpos += 1
+            # Grid the "+" button based on the previous math.
+            addbutton.grid(
+                row=rowpos, rowspan=2, column=columnpos, sticky="nesw"
+                )
+
+            # The border for the top row
+            bgborder = tk.Label(
+                self.frame, bg=bgcolour, fg=textcolour, borderwidth=1,
+                relief="solid"
+                )
+            # The text entry for the top row.
+            labels.append(
+                tk.Entry(
+                    self.frame, bg=bgcolour, fg=textcolour, justify="center",
+                    font=NORMALFONT, borderwidth=1, relief="sunken"
+                )
+            )
+            # Add the text "name" into the entry
+            labels[-1].insert(0, "name")
+            # Add information on refresh date.
+            infolabels.append(
+                tk.Label(
+                    self.frame, text="Refreshes on:\n\nIn: ??? Days",
+                    font=NORMALFONT, bg=bgcolour, fg=textcolour, borderwidth=1,
+                    relief="solid"
+                    )
+                )
+            dates.append(
+                tk.Entry(
+                    self.frame, bg=bgcolour, fg=textcolour, justify="center",
+                    font=NORMALFONT, borderwidth=1, relief="sunken"
+                )
+            )
+            i = manager_i_max - 1
+            constant = manager_constant
+            if manager_i_max % 3 == 0:
+                constant -= 1
+            elif i % 3 == 0:
+                constant -= 1
+            # Using the math module, round i up
+            ceiling_i = math.ceil(i/3)
+            # Round i down to the nearest whole number
+            floor_i = math.floor(i/3)
+            rowpos = self.calcRowPos(i, constant)
+            columnpos = i - (constant * 3)
+            if columnpos >= 4:
+                columnpos -= 3
+                rowpos += 1
+            # Grid each element in their calculated positions
+            bgborder.grid(
+                row=rowpos, column=columnpos, sticky="nesw"
+            )
+            labels[-1].grid(
+                row=rowpos, column=columnpos, sticky="nesw", padx=1, pady=1
+                )
+            infolabels[-1].grid(
+                row=(rowpos + 1), column=columnpos, sticky="new"
+                )
+            dates[-1].grid(
+                row=(rowpos + 1), column=columnpos, sticky="ew", padx=5
+                )
+            self.frame.rowconfigure((ceiling_i * 2), weight=1)
+            # Bind when the mouse hovers over an element to change its colour
+            # and when it leaves, change it back
+            labels[-1].bind("<Enter>", hovercolouron)
+            labels[-1].bind("<Leave>", hovercolouroff)
+            dates[-1].bind("<Enter>", hovercolouron)
+            dates[-1].bind("<Leave>", hovercolouroff)
+
+        rowpos = self.calcRowPos(i_max, constant)
+        columnpos = i_max - (constant * 3)
+        addbutton.grid(
+            row=rowpos, rowspan=2, column=columnpos, sticky="nesw"
+            )
+
+    def calcRowPos(self, i, constant):
+        # A function to calculate the row position for gridding
+        # Round i down to the nearest whole number
+        floor_i = math.floor(i/3)
+        if i % 3 == 0:
+            return (floor_i + constant)
+        else:
+            return (floor_i + constant + 1)
+
+    def getEntryText(self, labels, dates):
+        # Try to get text from the entries
+        try:
+            for i in range(len(labels)):
+                name = labels[i].get()
+                date = dates[i].get()
+            with open(file_location, "r") as file:
+                data = json.load(file)
+                file.close()
+            if "Subscriptions" not in data:
+                data["Subscriptions"] = []
+            data["Subscriptions"] = []
+            for i in range(len(labels)):
+                name = labels[i].get()
+                date = dates[i].get()
+                print(f"Date: {date}")
+                english_date = str(
+                    datetime.datetime.strptime(date, "%d %B %Y").date()
+                    )
+                data["Subscriptions"].append(
+                    {
+                        "name": name,
+                        "date": english_date
+                    }
+                )
+                print(f"Subscription: {name}, date: {date}")
+            with open(file_location, "w") as file:
+                json.dump(data, file, indent=4)
+                file.close()
+        # If any errors occur, for example no data or others, print the error
+        # in the terminal and do not continue.
+        except ValueError as error:
+            print(error)
+        except Exception as error:
+            print(error)
 
     def onFrameConfigure(self, event):
         # Changes the area of scrolling to be the entire bounding box for the
@@ -332,7 +474,6 @@ class MainMenu(tk.Frame):
         # If the canvas changes size, change its width to be the width of the
         # Frame
         self.canvas.itemconfig(self.newframe, width=event.width)
-        print("Triggered")
 
     # https://stackoverflow.com/a/17457843
     def onMouseWheel(self, event):
@@ -347,6 +488,7 @@ class Configuration(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.controller = controller
         self.parent = parent
+        # Configure the sizing of the columns
         self.columnconfigure(0, weight=0)
         self.columnconfigure(1, weight=1)
         self.rowconfigure([1], weight=0)
@@ -356,51 +498,23 @@ class Configuration(tk.Frame):
         self.grid(
             row=0, column=1, columnspan=3, padx=20, pady=20, sticky="nsew"
             )
+        # Assign the class to darkswitch.
         darkswitch = AnimatedButton(self)
+        # Change the label background
         darkswitch.config(bg=bgcolour)
+        # Grid the label at the specified location.
         darkswitch.grid(row=0, column=0, padx=(10, 0))
+        # Run the animation with the file location, what setting will change,
+        # and whether to play automatically or not.
         darkswitch.onswitch(
-            f"{os.getcwd()}/textures/On-Off-merged-frames.gif",
-            "Sidebar", False
+            f"{path}/textures/On-Off-merged-frames.gif", "Sidebar", False
             )
+        # A label that explains the button.
         darklabel = tk.Label(
             self, text="Left Sided Navigation", fg=textcolour,
             bg=bgcolour, font=NORMALFONT
             )
-        if darkswitch is False:
-            master.controller.frames["Sidebar"].grid(
-                row=0, column=2, sticky="nesw"
-                )
         darklabel.grid(row=0, column=1, sticky="w", padx=(20, 20))
-
-
-class SubscriptionManager(tk.Frame):
-    # Main menu with the text for each widget displayed in a text box instead
-    # of a label
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-        self.controller = controller
-        self.parent = parent
-        self.columnconfigure(0, weight=0)
-        self.columnconfigure(1, weight=1)
-        self.rowconfigure([0, 1], weight=1)
-        self.configure(bg="white")
-        print(f"[{GREEN}SubscriptionManager{COLOURLESS}] - Executed")
-        self.grid(
-            row=0, column=1, columnspan=3, padx=20, pady=20, sticky="nsew"
-            )
-        heading = tk.Label(
-            self, text="Edit your current subscriptions",
-            fg=textcolour, bg=bgcolour, font=NORMALFONT
-            )
-        heading.grid(row=0, column=0, padx=10)
-        text = tk.Label(
-            self, text="Not implemented yet", fg=textcolour, bg=bgcolour,
-            font=NORMALFONT
-        )
-        text.grid(row=1, column=0)
-
-        # update = tk.Button(self)
 
 
 # https://stackoverflow.com/questions/43770847/play-an-animated-gif-in-python-with-tkinter
@@ -462,17 +576,17 @@ class AnimatedButton(tk.Label):
                 self.config(image=self.frames[self.location])
                 # After a delay, play the next frame.
                 self.after(self.delay, self.next_frame)
-            # When there are no more frames in the list, stop
+            # When there are no more frames in the list, stop and bind the
+            # forward playback option to the button
             except IndexError:
                 print(f"{CLEAR}[{GREEN}GIF Playback{COLOURLESS}] -> Complete")
                 self.bind(
                         "<Button-1>", lambda event: [
                             self.unbind("<Button-1>"),
-                            ChangeSettings(f"{self.setting}2"),
+                            ChangeSettings(f"{self.setting}R-G"),
                             self.prev_frame()
                         ]
                     )
-                return True
 
     def prev_frame(self):
         if self.frames:
@@ -484,25 +598,27 @@ class AnimatedButton(tk.Label):
                     raise IndexError
                 self.config(image=self.frames[self.location])
                 self.after(self.delay, self.prev_frame)
+            # When there are no more frames in the list, stop and bind the
+            # reverse playback option to the button
             except IndexError:
                 print(f"{CLEAR}[{GREEN}GIF Playback{COLOURLESS}] -> Reversed")
                 self.bind(
                     "<Button-1>", lambda event: [
                         self.unbind("<Button-1>"),
-                        ChangeSettings(f"{self.setting}1"),
+                        ChangeSettings(f"{self.setting}G-R"),
                         self.next_frame()
                         ]
                     )
-                return False
 
     def load_frame(self):
         # if there are frames
         if self.frames:
             self.config(image=self.frames[self.location])
+            # Bind the reverse playback option to the button.
             self.bind(
                 "<Button-1>", lambda event: [
                     self.unbind("<Button-1>"),
-                    ChangeSettings(f"{self.setting}1"),
+                    ChangeSettings(f"{self.setting}G-R"),
                     self.next_frame()
                     ]
                 )
@@ -512,27 +628,31 @@ class ChangeSettings():
     def __init__(self, setting):
         self.setting = setting
 
-        if setting == "Sidebar1":
-            # Index [:-1] will remove the last character from the string
-            frame = frames[setting[:-1]]
+        # If the sidebar goes from red to green, move the sidebar to the right
+        if setting == "SidebarG-R":
+            # Index [:-3] will remove the last three characters from the string
+            frame = frames[setting[:-3]]
             frame.grid(row=0, column=2, padx=(0, 20), pady=20, sticky="nesw")
             for Frame in frames:
                 frame = frames[Frame]
                 if Frame != "Sidebar":
                     print(f"{Frame} edited")
+                    print("G-R")
                     frame.grid_forget()
                     frame.grid(
                         row=0, padx=20, pady=20, column=1, sticky="nesw"
                         )
 
-        elif setting == "Sidebar2":
-            frame = frames[setting[:-1]]
+        # If the sidebar goes from red to green, move the sidebar to the left
+        elif setting == "SidebarR-G":
+            frame = frames[setting[:-3]]
             frame.grid(
                 row=0, rowspan=1, column=0, padx=(20, 0), pady=20,
                 sticky="nsew"
                 )
 
 
+# If this is the main file, run it.
 if __name__ == "__main__":
     window = Window()
     window.mainloop()
